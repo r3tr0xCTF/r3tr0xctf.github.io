@@ -1,12 +1,20 @@
 #
 # This file contains configuration flags to customize your site
 #
+title: "R3tr0xCTF Cybersecurity Blog"
+description: "Write-ups, labs, and security awareness tips"
+author:
+  name: "DC."
+  bio: "Cybersecurity professional, CTF enthusiast"
+  location: "Random"
+
+
 
 # Name of your site (displayed in the header)
-name: Your Name
+name: Gh057x
 
 # Short bio or description (displayed in the header)
-description: Web Developer from Somewhere
+description: Attempting to be a hacker...
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
 avatar: https://raw.githubusercontent.com/barryclark/jekyll-now/master/images/jekyll-logo.png
@@ -21,12 +29,12 @@ footer-links:
   email:
   facebook:
   flickr:
-  github: barryclark/jekyll-now
+  github: r3tr0xctf.github.io
   instagram:
   linkedin:
   pinterest:
   rss: # just type anything here for a working RSS icon
-  twitter: jekyllrb
+  twitter: Gh057x
   stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
   youtube: # channel/<your_long_string> or user/<user-name>
   googleplus: # anything in your profile username that comes after plus.google.com/
