@@ -9,6 +9,6 @@ This is my new blog where I'll share:
 - Capture the Flag (CTF) write-ups
 - Practical cybersecurity tips
 - Security campaigns I've run
-- My journey toward CISM and CISSP certifications an other certs
+- My journey toward certifications and other hacker nonsense
 
 Stay tuned!
