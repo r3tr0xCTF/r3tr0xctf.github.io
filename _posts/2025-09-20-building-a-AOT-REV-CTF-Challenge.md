@@ -1,0 +1,259 @@
+---
+layout: post
+title: "Building an Attack on Titan CTF Challenge"
+date: 2025-09-20
+---
+
+Building an Attack on Titan CTF Challenge: From Concept to Completion
+
+The Idea
+
+Like all hacker things, and mindsets come up the great idea(s), based on the 80-20 theory. Meaning only knowing 20% of the subject matter and improvising the remaining 80%. My initial idea was to create CTF Challenges that were Anime-based to help keep things interesting with our workstudy team, but also be interactive as in the way if they knew the Anime show/lore, etc, they could also answer the puzzle/riddle without having to fully work out the puzzle, in certain cases, also if they didn’t know the lore. They would need to do basic OSINT to figure it out.
+This post chronicles the complete development journey of an Attack on Titan-themed reverse engineering challenge, from initial concept through multiple iterations of debugging and refinement to the final working implementation.
+
+Initial Concept and Inspiration
+
+The challenge began with a simple idea: combine the popular Attack on Titan anime with reverse engineering education. The three-wall structure of the series (Maria, Rose, and Sheena) provided a natural progression framework for increasing difficulty levels.
+
+Core Design Goals:
+
+Make reverse engineering accessible to anime fans
+Provide multiple solution paths (domain knowledge vs. technical analysis)
+Implement realistic anti-analysis techniques
+Create an engaging narrative wrapper around technical concepts
+
+The Development Process
+
+Phase 1: Initial Implementation
+
+The first version attempted ambitious multi-layer encryption for all passwords and the final flag. Each wall would use different cryptographic methods:
+Wall Maria: XOR with index, XOR with key, subtract constant
+Wall Rose: Reverse array processing with multiple XOR operations
+Wall Sheena: Position-dependent encryption with different keys per character
+The flag would be split into four parts, each encrypted differently and reassembled at runtime.
+
+Phase 2: Reality Check - The Bug Hunt
+
+When testing the initial implementation, we immediately encountered issues:
+$ ./titan_challenge
+🔐 Enter the titan's name: COLOSSAL
+❌ Incorrect password. Wall Maria remains sealed.
+
+This began an extensive debugging session that revealed several fundamental problems.
+
+Problem 1: Encryption Logic Errors
+
+The encrypted byte arrays didn't actually decrypt to the intended passwords. Manual calculation revealed:
+// Expected: "COLOSSAL"
+// Actual decryption: "A_jhji@_"
+
+The issue was that the encrypted arrays were manually created without proper verification against the decryption algorithm.
+
+Problem 2: Array Size Mismatches
+
+Compiler warnings revealed array initialization problems:
+warning: excess elements in array initializer
+
+The cipher table structure defined 8-byte arrays but was being initialized with longer strings, causing memory corruption.
+
+Problem 3: Memory Management Issues
+
+The flag decryption used sizeof() operations on arrays passed as parameters, which in C returns the pointer size rather than the array size, leading to incorrect bounds calculations.
+
+Problem 4: Control Flow Bugs
+
+The integrity checking system had a logic error where Wall Maria's successful completion would modify a global variable, but subsequent integrity checks expected the original value, causing false positive corruption detection.
+
+Phase 3: Systematic Debugging
+
+Rather than patching individual issues, we took a systematic approach to fix the underlying problems:
+
+Step 1: Password Validation Fix
+
+We created a Python script to properly calculate the encrypted values:
+def encrypt_method1(text, key=0xAA):
+    encrypted = []
+    for i, char in enumerate(text):
+        # Reverse the decryption: ((data[i] ^ i) ^ KEY) - 3 = char
+        step1 = ord(char) + 3
+        step2 = step1 ^ key
+        step3 = step2 ^ i
+        encrypted.append(step3)
+    return encrypted
+
+# Generate correct encrypted arrays
+
+wall1_encrypted = encrypt_method1("COLOSSAL")
+
+This ensured the encrypted arrays would actually decrypt to the intended passwords.
+
+Step 2: Memory Safety Improvements
+
+We replaced dangerous sizeof() operations with explicit length calculations and added proper null terminator handling:
+
+// Before: Unreliable sizeof() usage
+for (int i = 0; i < sizeof(encrypted)-1; i++)
+
+// After: Explicit length calculation
+
+int len = 0;
+while (encrypted[len] != 0 && len < 255) len++;
+for (int i = 0; i < len; i++)
+
+Step 3: Control Flow Correction
+We identified that the integrity check system needed to account for legitimate state changes during challenge progression:
+// Fixed integrity checking
+if (i == 0 && coordinate_system != 0x13579BDF) {
+    printf("⚡ Coordinate system corrupted!\n");
+    exit(1);
+}
+challenges[i]();
+if (i == 0) {
+    coordinate_system = 0x13579BDF; // Reset after Wall Maria
+}
+
+Phase 4: Flag Protection Implementation
+
+The original complex flag decryption continued to cause issues, so we pivoted to a simpler but equally effective approach - runtime string construction:
+// Anti-static analysis through character-by-character construction
+char hidden_flag[64];
+int idx = 0;
+hidden_flag[idx++] = 'C';
+hidden_flag[idx++] = 'T';
+hidden_flag[idx++] = 'F';
+// ... continues for full flag
+
+This approach effectively hides the flag from strings analysis while being much more reliable than complex multi-part decryption.
+
+Technical Implementation Details
+
+Anti-Analysis Measures
+
+The final implementation includes several anti-analysis techniques:
+
+Debugger Detection
+// Ptrace self-attach
+if (ptrace(PTRACE_TRACEME, 0, 1, 0) == -1) {
+    printf("🛡️ Titan hardening detected!\n");
+    exit(1);
+}
+
+Timing Analysis
+
+// Single-stepping detection
+struct timeval start, end;
+gettimeofday(&start, NULL);
+// ... timing-sensitive operations ...
+if (microseconds > 50000) {
+    printf("⏱️ Time anomaly detected!\n");
+    exit(1);
+}
+
+Environment Checks
+
+// Debugger environment detection
+const char* suspicious_env[] = {"LINES", "COLUMNS", "_", "SHLVL"};
+if (suspicious_count >= 4) {
+    printf("🎯 Abnormal environment detected!\n");
+    exit(1);
+}
+
+Encryption Algorithms
+
+Each wall implements a different cryptographic approach:
+Wall Maria: Multi-Step XOR
+buffer[i] = ((data[i] ^ i) ^ KEY_FOUNDING) - 3;
+
+Wall Rose: Reverse Processing
+
+int rev_idx = len - 1 - i;
+buffer[i] = ((data[rev_idx] ^ KEY_FEMALE) - i) ^ KEY_CART;
+
+Wall Sheena: Position-Dependent Keys
+
+if (i == 0) buffer[i] = data[i] ^ KEY_FOUNDING ^ 0x03;
+else if (i == 1) buffer[i] = data[i] ^ KEY_CART ^ 0x29;
+// ... different operation per position
+
+Lessons Learned
+
+Development Process Insights
+
+Test Early and Often: The initial implementation looked correct but failed basic functionality testing. Continuous testing throughout development would have caught issues earlier.
+
+Verify Cryptographic Logic: Manual calculation of encrypted values is essential. Automated testing of encryption/decryption pairs prevents logic errors.
+
+Memory Safety is Critical: C's pointer arithmetic and array handling require careful attention. Buffer overflows and incorrect size calculations can break functionality entirely.
+
+Keep It Simple: Complex multi-part encryption systems are prone to bugs. Simpler approaches often provide equivalent security with better reliability.
+
+Educational Design Principles
+Multiple Solution Paths: Allowing both domain knowledge and technical analysis approaches makes challenges accessible to different audiences.
+
+
+Progressive Difficulty: Each wall introduces new concepts while building on previous knowledge.
+
+
+Thematic Consistency: The Attack on Titan theme isn't just decoration - it provides meaningful context and hints that guide solution discovery.
+
+
+Real-World Techniques: The anti-analysis measures mirror actual malware protection techniques, providing practical educational value.
+
+
+Technical Validation
+Static Analysis Resistance
+$ strings titan_challenge | grep -i ctf
+# No results - flag successfully hidden
+
+Functionality Verification
+$ echo -e "COLOSSAL\nARMORED\nBEAST" | ./titan_challenge
+# Successfully completes all three challenges
+🚩 FLAG: CTF{THE_RUMBLING_HAS_BEGUN_2000_YEARS_AGO}
+
+Anti-Debugging Effectiveness
+$ gdb ./titan_challenge
+(gdb) run
+🛡️ Titan hardening detected!
+[Inferior 1 (process 12345) exited with code 1]
+
+Community Reception and Impact
+
+The challenge successfully achieved its educational goals:
+
+Accessibility: 
+
+Anime fans could participate without deep reverse engineering background
+
+Technical Depth: Experienced CTF players found meaningful reverse engineering content
+
+Learning Outcomes: Players reported learning both Attack on Titan lore and binary analysis techniques
+
+Future Improvements
+
+Several enhancements could further improve the challenge:
+
+Dynamic String Obfuscation: Implement more sophisticated string hiding techniques
+
+Control Flow Obfuscation: Add function pointer indirection and code path confusion
+
+Additional Anti-Analysis: Implement VM detection and sandbox evasion
+
+Scalable Difficulty: Create multiple versions for different skill levels
+
+Conclusion
+
+This development journey illustrates several key principles of CTF challenge creation:
+
+Iterative Development: Expect multiple rounds of debugging and refinement
+
+Testing is Essential: Functional testing reveals issues that code review misses
+
+Simplicity Wins: Elegant simple solutions often outperform complex ones
+
+Theme Matters: Good narrative wrapper enhances both engagement and educational value
+
+The final challenge successfully combines entertainment with education, providing multiple learning opportunities while maintaining the fun factor that makes CTFs compelling. The extensive debugging process, while time-consuming, resulted in a robust and reliable challenge that achieves its educational objectives.
+
+Whether you're creating CTF challenges, implementing anti-analysis techniques, or learning reverse engineering, this project demonstrates that persistence through the debugging process and willingness to simplify complex systems leads to better outcomes.
+
+Final Challenge Available: The complete source code and writeups are available for educational use and further development.
