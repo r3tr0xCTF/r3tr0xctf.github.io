@@ -6,7 +6,7 @@ date: 2026-02-10
 
 Ghost in the Machine: Hijacking Industrial Robots with ROS 1
 
-By: Gh057x | Cacklacky Con Community Research Series
+By: Gh057x  |  Cacklacky | Hacking Con(s) Community Research Series
 
 Walk into any modern warehouse or "smart" factory, and you’ll see them: AMRs (Autonomous Mobile Robots). They’re heavy, they’re fast, and they’re carrying the literal weight of global logistics. But here’s the scary part—underneath that high-tech industrial shell, many of these bots are running a middleware called ROS 1 (Robot Operating System).
 
@@ -22,7 +22,7 @@ The Attack: Taking the Wheel
 
 We recently demoed a "Remote Kinetic Hijack" that’s surprisingly simple. Once you’re on the factory’s internal VLAN, you just point your own machine at the robot’s Master:
 
-export ROS_MASTER_URI=http://<ROBOT_IP>:11311
+[export ROS_MASTER_URI=http://<ROBOT_IP>:11311]
 
 
 You don't need a zero-day. You don't need to be a memory corruption wizard. You just run a Python script that floods malicious velocity commands at 100Hz. Since the robot’s actual controller is likely only talking at 10Hz, your attack stream wins the race every single time.
@@ -53,4 +53,4 @@ Final Thought
 
 The "Ghost in the Machine" isn't a sci-fi trope—it's what happens when we connect legacy protocols to the internet. As we bridge the gap between bits and atoms, security can't be an "extra" feature. It’s a safety requirement.
 
-Ready to try it yourself? Check out my Demo Setup Guide to fire up the Gazebo lab.
+Ready to try it yourself? Check out my Demo Setup Guide to fire up the Gazebo lab, just ping me for the info :)
